@@ -1,0 +1,22 @@
+{
+  "middlewareSettings": {
+    "analyzerDetails": {
+      "analyzerName": "SmartLytePlus",
+      "serialNumber": "12345-67890",
+      "analyzerId": "yourAnalyzerId",
+      "analyzerIP": "172.16.241.250",
+      "analyzerPort": "8080",
+      "hostIP": "172.16.241.70",
+      "hostPort": "80"
+    },
+    "limsSettings": {
+      "pullSampleDataEndpoint": "http://example.com/api/pullSampleData",
+      "pushSampleAcceptanceEndpoint": "http://example.com/api/pushSampleAcceptance",
+      "pushResultsEndpoint": "http://example.com/api/pushResults",
+      "pullResultsEndpoint": "http://example.com/api/pullResults",
+      "username": "yourUsername",
+      "password": "yourPassword",
+      "departmentId": "yourDepartmentId"
+    }
+  }
+}
