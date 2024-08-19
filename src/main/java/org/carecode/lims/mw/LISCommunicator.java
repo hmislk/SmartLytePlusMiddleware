@@ -85,8 +85,7 @@ public class LISCommunicator {
 
     public PatientDataBundle createPatientDataBundleFromParams(Map<String, String> params) {
         PatientDataBundle pdb = new PatientDataBundle();
-
-        // Creating and setting the patient record
+        pdb.setMiddlewareSettings(middlewareSettings);
         PatientRecord patientRecord = new PatientRecord(
                 0, // Assuming frameNumber as 0
                 params.getOrDefault("pId", "Unknown"), // Default patient ID if not provided
