@@ -34,9 +34,9 @@ public class ResponseHandler implements HttpHandler {
             }
 
             Map<String, String> params = limsUtils.parseQueryParams(requestBody.toString());
-            PatientDataBundle patientDataBundle = limsUtils.createPatientDataBundleFromParams(params);
+            DataBundle dataBundle = limsUtils.createDataBundleFromParams(params);
 
-            limsUtils.pushResults(patientDataBundle);
+            limsUtils.pushResults(dataBundle);
             logger.info("Results sent to LIMS successfully.");
 
             String responseMessage = "Response received and processed";
