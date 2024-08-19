@@ -21,7 +21,7 @@ public class SmartLytePlusMiddleware {
     public static final Logger logger = LogManager.getLogger("SmartLytePlusLogger");
     public static MiddlewareSettings middlewareSettings;
     public static LISCommunicator limsUtils;
-    public static boolean testingLis = false;  // Indicates whether to run test before starting the server
+    public static boolean testingLis = true;  // Indicates whether to run test before starting the server
 
     public static void main(String[] args) {
         logger.info("SmartLytePlusMiddleware started at: " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));

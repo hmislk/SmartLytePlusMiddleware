@@ -6,6 +6,8 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.logging.log4j.Logger;
@@ -13,6 +15,11 @@ import org.carecode.lims.libraries.PatientDataBundle;
 import org.carecode.lims.libraries.ResultsRecord;
 import org.carecode.lims.libraries.PatientRecord;
 import org.carecode.lims.libraries.MiddlewareSettings;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 
 public class LISCommunicator {
 
@@ -37,16 +44,14 @@ public class LISCommunicator {
         return params;
     }
 
-    // Parses the ion-specific data from the parameters
     public Map<String, String> parseIonData(Map<String, String> params, String ion) {
         Map<String, String> ionData = new HashMap<>();
         String prefix = "ionData[" + ion + "]";
         for (Map.Entry<String, String> entry : params.entrySet()) {
             if (entry.getKey().startsWith(prefix)) {
                 try {
-                    // Correctly extracting the substring between brackets
                     String keySegment = entry.getKey().substring(entry.getKey().indexOf('['), entry.getKey().lastIndexOf(']') + 1);
-                    String subKey = keySegment.replaceAll("\\[|\\]", "").replace(ion, "").replaceAll("^\\.", ""); // Remove leading dots if any
+                    String subKey = keySegment.replaceAll("\\[|\\]", "").replace(ion, "").replaceAll("^\\.", "");
                     if (!subKey.isEmpty()) {
                         ionData.put(subKey, entry.getValue());
                     }
@@ -58,7 +63,6 @@ public class LISCommunicator {
         return ionData;
     }
 
-    
     // Method to extract ion-specific data
     public Map<String, String> parseIonData(Map<String, String> params, String ion, boolean otherMethod) {
         Map<String, String> ionData = new HashMap<>();
@@ -78,58 +82,71 @@ public class LISCommunicator {
         });
         return ionData;
     }
-    
+
     public PatientDataBundle createPatientDataBundleFromParams(Map<String, String> params) {
         PatientDataBundle pdb = new PatientDataBundle();
 
-        // Assuming patient record parsing is already handled
+        // Creating and setting the patient record
         PatientRecord patientRecord = new PatientRecord(
-                0, // frameNumber
-                params.getOrDefault("pId", "defaultPatientId"),
-                null, // additionalId
-                "Test Patient", // patientName if not provided
-                null, // patientSecondName
-                null, // patientSex
-                null, // race
-                null, // dob
-                null, // patientAddress
-                null, // patientPhoneNumber
-                null // attendingDoctor
+                0, // Assuming frameNumber as 0
+                params.getOrDefault("pId", "Unknown"), // Default patient ID if not provided
+                null, // additionalId not provided
+                "Unknown Patient", // Default patient name
+                null, // patientSecondName not provided
+                null, // patientSex not provided
+                null, // race not provided
+                null, // dob not provided
+                null, // patientAddress not provided
+                null, // patientPhoneNumber not provided
+                null // attendingDoctor not provided
         );
         pdb.setPatientRecord(patientRecord);
+        logger.info("Patient record created for patient ID: " + patientRecord.getPatientId());
+
+        // Decoding URL-encoded keys and rebuilding the map with decoded keys
+        Map<String, String> decodedParams = new HashMap<>();
+        for (Map.Entry<String, String> entry : params.entrySet()) {
+            try {
+                String decodedKey = URLDecoder.decode(entry.getKey(), StandardCharsets.UTF_8.name());
+                decodedParams.put(decodedKey, entry.getValue());
+            } catch (Exception e) {
+                logger.error("Error decoding parameter key: " + entry.getKey(), e);
+            }
+        }
 
         // List of expected ions based on your data structure
         String[] expectedIons = {"Na", "K", "Cl", "Ca"};
-
         for (String ion : expectedIons) {
-            if (params.containsKey("ionData[" + ion + "][ion]")) { // Check if the ion data is present
-                Map<String, String> ionData = parseIonData(params, ion);
+            logger.debug("Checking ion: " + ion);
+            if (decodedParams.containsKey("ionData[" + ion + "][ion]")) {
+                Map<String, String> ionData = parseIonData(decodedParams, ion);
                 if (!ionData.isEmpty()) {
+                    logger.debug("Ion data for " + ion + ": " + ionData);
                     ResultsRecord resultsRecord = new ResultsRecord(
-                            0, // frameNumber, adjust as necessary
-                            ion, // Test Code, using ion as a test code
-                            Double.parseDouble(ionData.getOrDefault("conc", "0")), // Result Value, providing default if missing
+                            0, // frameNumber
+                            ion, // Test Code
+                            Double.parseDouble(ionData.getOrDefault("conc", "0")), // Result Value
                             Double.parseDouble(ionData.getOrDefault("min", "0")), // Minimum Value
                             Double.parseDouble(ionData.getOrDefault("max", "0")), // Maximum Value
                             ionData.getOrDefault("flag", ""), // Flag
                             ionData.getOrDefault("sampleType", ""), // Sample Type
-                            ionData.getOrDefault("strUnits", "unit"), // Result Units
-                            null, // Result DateTime, if applicable
-                            null, // Instrument Name, if applicable
-                            params.get("pId") // Using patient ID as sample ID
+                            ionData.getOrDefault("strUnits", ""), // Result Units
+                            null, // Result DateTime
+                            null, // Instrument Name
+                            params.get("pId") // Sample ID
                     );
-
-                    pdb.addResultsRecord(resultsRecord);
+                    pdb.getResultsRecords().add(resultsRecord);
                 } else {
                     logger.warn("No data found for ion: " + ion);
                 }
+            } else {
+                logger.warn("Data for ion " + ion + " is not present in parameters.");
             }
         }
 
+        logger.info("Total Result Records Created: " + pdb.getResultsRecords().size());
         return pdb;
     }
-
-
 
     public void pushResults(PatientDataBundle patientDataBundle) {
         try {
