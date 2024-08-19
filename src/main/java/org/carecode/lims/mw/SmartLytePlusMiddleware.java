@@ -1,56 +1,86 @@
 package org.carecode.lims.mw;
 
-/**
- *
- * @author Dr M H B Ariyaratne
- */
+import com.google.gson.Gson;
+import java.io.FileReader;
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.concurrent.Executors;
+
+import com.sun.net.httpserver.HttpServer;
+import java.util.Map;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.carecode.lims.libraries.*;
+
 public class SmartLytePlusMiddleware {
+    public static final Logger logger = LogManager.getLogger("SmartLytePlusLogger");
+    public static MiddlewareSettings middlewareSettings;
+    public static LimsUtils limsUtils;
+    public static boolean testingLis = false;  // Indicates whether to run test before starting the server
 
     public static void main(String[] args) {
-        System.out.println("MDGPHM!");
-        // Start middleware operations
+        logger.info("SmartLytePlusMiddleware started at: " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
         loadSettings();
-        while (true) {
-            pingLIMS();
-            checkForSamples();
-            sendTestRequestToAnalyzer();
-            receiveResultsFromAnalyzer();
-            sendResultsToLIMS();
-            try {
-                Thread.sleep(5000); // Sleep for 5 seconds before next iteration
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+
+        if (middlewareSettings != null) {
+            limsUtils = new LimsUtils(logger, middlewareSettings);
+
+            if (testingLis) {
+                logger.info("Testing LIS started");
+                testLis();  // Perform the test method before starting the server
+                logger.info("Testing LIS Ended. System will now shutdown.");
+                System.exit(0);
             }
+
+            startServer();  // Start the server if no testing or after testing
+        } else {
+            logger.error("Failed to load settings.");
         }
     }
 
-    // Load all settings from a JSON file
+    public static void testLis() {
+        logger.info("Starting LIMS test process...");
+        String filePath = "response.txt";  // Path to the test data file
+
+        try {
+            String responseContent = new String(Files.readAllBytes(Paths.get(filePath)), StandardCharsets.UTF_8);
+            Map<String, String> params = limsUtils.parseQueryParams(responseContent);
+            PatientDataBundle patientDataBundle = limsUtils.createPatientDataBundleFromParams(params);
+
+            limsUtils.pushResults(patientDataBundle);
+            logger.info("Test results sent to LIMS successfully.");
+        } catch (IOException e) {
+            logger.error("Failed to read test data from file: " + filePath, e);
+        } catch (Exception e) {
+            logger.error("An unexpected error occurred during the LIMS test process.", e);
+        }
+    }
+
     public static void loadSettings() {
-        // Method body to be implemented
+        Gson gson = new Gson();
+        try (FileReader reader = new FileReader("config.json")) {
+            middlewareSettings = gson.fromJson(reader, MiddlewareSettings.class);
+            logger.info("Settings loaded from config.json");
+        } catch (IOException e) {
+            logger.error("Failed to load settings from config.json", e);
+        }
     }
 
-    // Ping the LIMS intermittently to check for new samples to process
-    public static void pingLIMS() {
-        // Method body to be implemented
-    }
-
-    // Check for new samples to perform
-    public static void checkForSamples() {
-        // Method body to be implemented
-    }
-
-    // Send the test request details to the SmartLytePlus analyzer
-    public static void sendTestRequestToAnalyzer() {
-        // Method body to be implemented
-    }
-
-    // Receive results from the SmartLytePlus analyzer
-    public static void receiveResultsFromAnalyzer() {
-        // Method body to be implemented
-    }
-
-    // Send the acceptance details and results back to the LIMS
-    public static void sendResultsToLIMS() {
-        // Method body to be implemented
+    public static void startServer() {
+        try {
+            int port = middlewareSettings.getAnalyzerDetails().getHostPort();
+            HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);
+            server.createContext("/", new ResponseHandler(logger, limsUtils));
+            server.setExecutor(Executors.newCachedThreadPool());
+            server.start();
+            logger.info("Server started on port " + port);
+        } catch (IOException e) {
+            logger.error("Failed to start the server", e);
+        }
     }
 }
