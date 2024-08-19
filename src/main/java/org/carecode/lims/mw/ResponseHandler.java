@@ -12,9 +12,9 @@ import org.carecode.lims.libraries.*;
 
 public class ResponseHandler implements HttpHandler {
     private final Logger logger;
-    private final LimsUtils limsUtils;
+    private final LISCommunicator limsUtils;
 
-    public ResponseHandler(Logger logger, LimsUtils limsUtils) {
+    public ResponseHandler(Logger logger, LISCommunicator limsUtils) {
         this.logger = logger;
         this.limsUtils = limsUtils;
     }
