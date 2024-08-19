@@ -14,13 +14,13 @@ import org.carecode.lims.libraries.ResultsRecord;
 import org.carecode.lims.libraries.PatientRecord;
 import org.carecode.lims.libraries.MiddlewareSettings;
 
-public class LimsUtils {
+public class LISCommunicator {
 
     private final Logger logger;
     private static final Gson gson = new Gson();
     private final MiddlewareSettings middlewareSettings;
 
-    public LimsUtils(Logger logger, MiddlewareSettings settings) {
+    public LISCommunicator(Logger logger, MiddlewareSettings settings) {
         this.logger = logger;
         this.middlewareSettings = settings;
     }

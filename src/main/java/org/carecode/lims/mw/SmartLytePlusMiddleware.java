@@ -20,7 +20,7 @@ import org.carecode.lims.libraries.*;
 public class SmartLytePlusMiddleware {
     public static final Logger logger = LogManager.getLogger("SmartLytePlusLogger");
     public static MiddlewareSettings middlewareSettings;
-    public static LimsUtils limsUtils;
+    public static LISCommunicator limsUtils;
     public static boolean testingLis = false;  // Indicates whether to run test before starting the server
 
     public static void main(String[] args) {
@@ -28,7 +28,7 @@ public class SmartLytePlusMiddleware {
         loadSettings();
 
         if (middlewareSettings != null) {
-            limsUtils = new LimsUtils(logger, middlewareSettings);
+            limsUtils = new LISCommunicator(logger, middlewareSettings);
 
             if (testingLis) {
                 logger.info("Testing LIS started");
