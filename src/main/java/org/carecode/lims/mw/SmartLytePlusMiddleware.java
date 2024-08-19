@@ -50,9 +50,9 @@ public class SmartLytePlusMiddleware {
         try {
             String responseContent = new String(Files.readAllBytes(Paths.get(filePath)), StandardCharsets.UTF_8);
             Map<String, String> params = limsUtils.parseQueryParams(responseContent);
-            PatientDataBundle patientDataBundle = limsUtils.createPatientDataBundleFromParams(params);
+            DataBundle dataBundle = limsUtils.createDataBundleFromParams(params);
 
-            limsUtils.pushResults(patientDataBundle);
+            limsUtils.pushResults(dataBundle);
             logger.info("Test results sent to LIMS successfully.");
         } catch (IOException e) {
             logger.error("Failed to read test data from file: " + filePath, e);

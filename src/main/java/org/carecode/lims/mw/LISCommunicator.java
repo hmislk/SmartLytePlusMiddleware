@@ -20,6 +20,7 @@ import java.nio.charset.StandardCharsets;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import org.carecode.lims.libraries.DataBundle;
 
 public class LISCommunicator {
 
@@ -83,10 +84,9 @@ public class LISCommunicator {
         return ionData;
     }
 
-    public PatientDataBundle createPatientDataBundleFromParams(Map<String, String> params) {
-        PatientDataBundle pdb = new PatientDataBundle();
-
-        // Creating and setting the patient record
+    public DataBundle createDataBundleFromParams(Map<String, String> params) {
+        DataBundle pdb = new DataBundle();
+        pdb.setMiddlewareSettings(middlewareSettings);
         PatientRecord patientRecord = new PatientRecord(
                 0, // Assuming frameNumber as 0
                 params.getOrDefault("pId", "Unknown"), // Default patient ID if not provided
@@ -148,7 +148,7 @@ public class LISCommunicator {
         return pdb;
     }
 
-    public void pushResults(PatientDataBundle patientDataBundle) {
+    public void pushResults(DataBundle dataBundle) {
         try {
             String pushResultsEndpoint = middlewareSettings.getLimsSettings().getLimsServerBaseUrl() + "/test_results";
             URL url = new URL(pushResultsEndpoint);
@@ -158,7 +158,7 @@ public class LISCommunicator {
             conn.setRequestProperty("Accept", "application/json");
             conn.setDoOutput(true);
 
-            String jsonInputString = gson.toJson(patientDataBundle);
+            String jsonInputString = gson.toJson(dataBundle);
             try (OutputStream os = conn.getOutputStream()) {
                 byte[] input = jsonInputString.getBytes("utf-8");
                 os.write(input, 0, input.length);
