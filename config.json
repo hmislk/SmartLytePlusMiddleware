@@ -2,7 +2,7 @@
     "analyzerDetails": {
         "analyzerName": "SmartLytePlus",
         "serialNumber": "12345-67890",
-        "analyzerId": "yourAnalyzerId",
+        "analyzerId": "225",
         "analyzerIP": "172.16.241.70",
         "analyzerPort": 8080,
         "hostPort": 80,
@@ -16,11 +16,11 @@
         "sampleIdSendingDelay": "0",
         "resultSendingDelay": "0",
         "qcResultSendingInUse": "Yes",
-        "departmentAnalyzerId": "yourDepartmentAnalyzerId",
-        "departmentId": "yourDepartmentId"
+        "departmentAnalyzerId": "114780",
+        "departmentId": "9209"
     },
     "limsSettings": {
-        "limsServerBaseUrl": "http://192.168.181.101:8080/sethma/api/middleware",
+        "limsServerBaseUrl": "http://172.16.222.100:8080/ruhunu/api/middleware",
         "username": "buddhika",
         "password": "Buddhika123@"
     }
