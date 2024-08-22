@@ -1,151 +1,86 @@
 package org.carecode.lims.mw;
+
+import com.google.gson.Gson;
 import java.io.FileReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.net.HttpURLConnection;
 import java.net.InetSocketAddress;
-import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.concurrent.Executors;
 
-import com.google.gson.JsonObject;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonParser;
-import com.google.gson.JsonSyntaxException;
-
-import javax.swing.JOptionPane;
-
 import com.sun.net.httpserver.HttpServer;
-import com.sun.net.httpserver.HttpHandler;
-import com.sun.net.httpserver.HttpExchange;
+import java.util.Map;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.carecode.lims.libraries.*;
 
 public class SmartLytePlusMiddleware {
-
-    private static JsonObject settings;
+    public static final Logger logger = LogManager.getLogger("SmartLytePlusLogger");
+    public static MiddlewareSettings middlewareSettings;
+    public static LISCommunicator limsUtils;
+    public static boolean testingLis = true;  // Indicates whether to run test before starting the server
 
     public static void main(String[] args) {
-        System.out.println("MDGPHM!");
+        logger.info("SmartLytePlusMiddleware started at: " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
         loadSettings();
-        System.out.println(settings);
-        
-        startServer(); // Start the listener server
-        
-        while (true) {
-            JsonObject sample = checkForSamples();
-            if (sample != null) {
-                sendTestRequestToAnalyzer(sample);
-            }
-            try {
-                Thread.sleep(5000); // Sleep for 5 seconds before next iteration
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-    }
 
-    // Load all settings from a JSON file
-    public static void loadSettings() {
-        try (FileReader reader = new FileReader("config.json")) {
-            JsonParser parser = new JsonParser();
-            JsonElement jsonElement = parser.parse(reader);
-            settings = jsonElement.getAsJsonObject();
-        } catch (IOException | JsonSyntaxException e) {
-            e.printStackTrace();
-        }
-    }
+        if (middlewareSettings != null) {
+            limsUtils = new LISCommunicator(logger, middlewareSettings);
 
-    // Check for new samples to perform
-    public static JsonObject checkForSamples() {
-        String input = JOptionPane.showInputDialog(null, "Enter JSON sample data or 'wait' to requery:");
-        if (input == null || input.equalsIgnoreCase("wait")) {
-            return null;
+            if (testingLis) {
+                logger.info("Testing LIS started");
+                testLis();  // Perform the test method before starting the server
+                logger.info("Testing LIS Ended. System will now shutdown.");
+                System.exit(0);
+            }
+
+            startServer();  // Start the server if no testing or after testing
         } else {
-            try {
-                JsonParser parser = new JsonParser();
-                JsonElement jsonElement = parser.parse(input);
-                return jsonElement.getAsJsonObject();
-            } catch (JsonSyntaxException e) {
-                JOptionPane.showMessageDialog(null, "Invalid JSON input. Please try again.");
-                return null;
-            }
+            logger.error("Failed to load settings.");
         }
     }
 
-    // Send the test request details to the SmartLytePlus analyzer
-    public static void sendTestRequestToAnalyzer(JsonObject sample) {
+    public static void testLis() {
+        logger.info("Starting LIMS test process...");
+        String filePath = "response.txt";  // Path to the test data file
+
         try {
-            JsonObject testRequest = new JsonObject();
-            testRequest.add("testRequest", sample);
-            
-            String analyzerIP = settings.getAsJsonObject("middlewareSettings")
-                                        .getAsJsonObject("analyzerDetails")
-                                        .get("analyzerIP").getAsString();
-            String analyzerPort = settings.getAsJsonObject("middlewareSettings")
-                                          .getAsJsonObject("analyzerDetails")
-                                          .get("analyzerPort").getAsString();
-            String urlString = "http://" + analyzerIP + ":" + analyzerPort;
-            URL url = new URL(urlString);
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-            conn.setRequestMethod("POST");
-            conn.setRequestProperty("Content-Type", "application/json; utf-8");
-            conn.setDoOutput(true);
+            String responseContent = new String(Files.readAllBytes(Paths.get(filePath)), StandardCharsets.UTF_8);
+            Map<String, String> params = limsUtils.parseQueryParams(responseContent);
+            DataBundle dataBundle = limsUtils.createDataBundleFromParams(params);
 
-            try (OutputStream os = conn.getOutputStream()) {
-                byte[] input = testRequest.toString().getBytes(StandardCharsets.UTF_8);
-                os.write(input, 0, input.length);
-                os.flush();
-            }
-
-            int responseCode = conn.getResponseCode();
-            System.out.println("POST Response Code :: " + responseCode);
-
-            if (responseCode == HttpURLConnection.HTTP_OK) { // success
-                System.out.println("Test request sent successfully.");
-            } else {
-                System.out.println("POST request not worked");
-            }
+            limsUtils.pushResults(dataBundle);
+            logger.info("Test results sent to LIMS successfully.");
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error("Failed to read test data from file: " + filePath, e);
+        } catch (Exception e) {
+            logger.error("An unexpected error occurred during the LIMS test process.", e);
         }
     }
 
-    // Start an HTTP server to listen for incoming responses
+    public static void loadSettings() {
+        Gson gson = new Gson();
+        try (FileReader reader = new FileReader("config.json")) {
+            middlewareSettings = gson.fromJson(reader, MiddlewareSettings.class);
+            logger.info("Settings loaded from config.json");
+        } catch (IOException e) {
+            logger.error("Failed to load settings from config.json", e);
+        }
+    }
+
     public static void startServer() {
         try {
-            String hostPort = settings.getAsJsonObject("middlewareSettings")
-                                      .getAsJsonObject("analyzerDetails")
-                                      .get("hostPort").getAsString();
-            int port = Integer.parseInt(hostPort);
-
+            int port = middlewareSettings.getAnalyzerDetails().getHostPort();
             HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);
-            server.createContext("/", new ResponseHandler());  // Changed to root context
+            server.createContext("/", new ResponseHandler(logger, limsUtils));
             server.setExecutor(Executors.newCachedThreadPool());
             server.start();
-            System.out.println("Server started on port " + port);
+            logger.info("Server started on port " + port);
         } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    // Handler to process incoming responses
-    static class ResponseHandler implements HttpHandler {
-        @Override
-        public void handle(HttpExchange exchange) throws IOException {
-            if ("POST".equals(exchange.getRequestMethod())) {
-                JsonParser parser = new JsonParser();
-                JsonElement jsonElement = parser.parse(new InputStreamReader(exchange.getRequestBody(), StandardCharsets.UTF_8));
-                JsonObject response = jsonElement.getAsJsonObject();
-                System.out.println("Received response: " + response);
-
-                String responseMessage = "Response received";
-                exchange.sendResponseHeaders(200, responseMessage.getBytes(StandardCharsets.UTF_8).length);
-                try (OutputStream os = exchange.getResponseBody()) {
-                    os.write(responseMessage.getBytes(StandardCharsets.UTF_8));
-                }
-            } else {
-                exchange.sendResponseHeaders(405, -1); // 405 Method Not Allowed
-            }
+            logger.error("Failed to start the server", e);
         }
     }
 }
