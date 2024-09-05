@@ -119,7 +119,7 @@ public class LISCommunicator {
                     ResultsRecord resultsRecord = new ResultsRecord(
                             0, // frameNumber
                             ion, // Test Code
-                            Double.parseDouble(ionData.getOrDefault("conc", "0")), // Result Value
+                            ionData.getOrDefault("conc", "0"), // Result Value
                             Double.parseDouble(ionData.getOrDefault("min", "0")), // Minimum Value
                             Double.parseDouble(ionData.getOrDefault("max", "0")), // Maximum Value
                             ionData.getOrDefault("flag", ""), // Flag
