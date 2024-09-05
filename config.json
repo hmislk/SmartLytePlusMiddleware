@@ -6,7 +6,7 @@
         "analyzerIP": "192.168.203.205",
         "analyzerPort": 8080,
         "hostPort": 80,
-        "hostIp": "172.16.241.71",
+        "hostIp": "https://rh.carecode.org/rh/",
         "communicationType": "TCP/IP",
         "socketCommunicationType": "Client",
         "resultSendingCriteria": "Sample",
@@ -20,7 +20,7 @@
         "departmentId": "9039"
     },
     "limsSettings": {
-        "limsServerBaseUrl": "http://124.43.4.189:8010/ruhunu/api/middleware",
+        "limsServerBaseUrl": "https://rh.carecode.org/rh/api/middleware",
         "username": "buddhika",
         "password": "Buddhika123@"
     }
