@@ -74,6 +74,7 @@ public class SmartLytePlusMiddleware {
     public static void startServer() {
         try {
             int port = middlewareSettings.getAnalyzerDetails().getHostPort();
+            
             HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);
             server.createContext("/", new ResponseHandler(logger, limsUtils));
             server.setExecutor(Executors.newCachedThreadPool());
