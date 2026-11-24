@@ -5,6 +5,7 @@
     <artifactId>SmartLytePlusMiddleware</artifactId>
     <version>1.0-SNAPSHOT</version>
     <packaging>jar</packaging>
+    
     <dependencies>
         <dependency>
             <groupId>com.google.code.gson</groupId>
@@ -14,27 +15,47 @@
         </dependency>
         
         <dependency>
-	    <groupId>com.github.hmislk</groupId>
-	    <artifactId>lims-middleware-libraries</artifactId>
-	    <version>1.1.1</version>
-	</dependency>
+            <groupId>com.github.hmislk</groupId>
+            <artifactId>lims-middleware-libraries</artifactId>
+            <version>1.1.1</version>
+        </dependency>
+        
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-core</artifactId>
             <version>2.17.0</version>
         </dependency>
     </dependencies>
+    
     <repositories>
         <repository>
             <id>jitpack.io</id>
             <url>https://jitpack.io</url>
         </repository>
     </repositories>
+    
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
-        <exec.mainClass>com.carecode.smartlyteplusmiddleware.SmartLytePlusMiddleware</exec.mainClass>
     </properties>
+    
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.1.0</version>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <mainClass>com.carecode.smartlyteplusmiddleware.SmartLytePlusMiddleware</mainClass>
+                        </manifest>
+                    </archive>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+    
     <name>SmartLytePlusMiddleware</name>
 </project>
